@@ -5,6 +5,7 @@ library(ggthemes)
 library(kableExtra)
 library(plotly)
 library(ggplot2)
+
 options(stringsAsFactors = FALSE)
 fifa_data<- read_csv('C:\\Users\\user\\Desktop\\Project\\FIFA19\\data.csv',
                      local=locale(encoding="UTF-8"))
@@ -13,6 +14,8 @@ head(fifa_data)
 
 
 options(scipen = 999)
+
+# Feature Engineering 1
 
 fifa_data <- fifa_data %>%
   mutate(ValueMultiplier = ifelse(str_detect(Value, "K"), 1000, ifelse(str_detect(Value, "M"), 1000000, 1))) %>%
@@ -40,28 +43,54 @@ fwds <- c(f1, f2, f3, f4)
 fifa_data <- fifa_data %>% 
   mutate(PositionGroup = ifelse(Position %in% gk, "GK", ifelse(Position %in% defs, "DEF", ifelse(Position %in% mids, "MID", ifelse(Position %in% fwds, "FWD", "Unknown")))))
 
-a <- fifa_data %>%
-  filter(PositionGroup != "Unknown") %>%
-  ggplot(aes(x= PositionGroup, y= ValueNumeric_pounds)) +
-  geom_boxplot(fill = "orange") +
-  scale_y_log10(labels = dollar_format(prefix = "€")) +
-  ggtitle("Position vs Player_Value") +
-  theme_fivethirtyeight()
 
 
-b <- fifa_data %>%
-  filter(PositionGroup != "Unknown") %>%
-  ggplot(aes(x= Position, y= ValueNumeric_pounds)) +
-  geom_boxplot(fill = "orange") +
-  scale_y_log10(labels = dollar_format(prefix = "€")) +
-  coord_flip() +
-  theme_fivethirtyeight() +
-  facet_wrap(~ PositionGroup, scales = "free") +
-  theme(strip.background = element_rect(fill = "black"), strip.text = element_text(colour = "orange", face = "bold"))
-
-gridExtra::grid.arrange(a, b)
+# Correlations with Overall rating
+gk_vars <- fifa_data %>% select(contains("GK")) %>% names()
 
 
+spearman_cor_with_overall <- fifa_data %>%
+  filter(Position != "GK") %>%
+  select_if(is.numeric) %>%
+  select(-GKDiving, -GKHandling, -GKKicking, -GKPositioning, -GKReflexes, 
+         -ID, -X1, - `Jersey Number`, -ValueMultiplier, -WageMultiplier) %>% 
+  as.matrix() %>%
+  na.omit() %>%
+  cor(method = "spearman") 
+
+pearson_cor_with_overall <- fifa_data %>%
+  filter(Position != "GK") %>%
+  select_if(is.numeric) %>%
+  select(-GKDiving, -GKHandling, -GKKicking, -GKPositioning, -GKReflexes,
+        -ID, -X1, - `Jersey Number`, -ValueMultiplier, -WageMultiplier) %>% 
+  as.matrix() %>%
+  na.omit() %>%
+  cor()
+
+cor_colnames <- colnames(spearman_cor_with_overall)
+
+spearman_cor_with_overall <- spearman_cor_with_overall[,2] %>% data.frame()
+spearman_cor_with_overall <- cbind(cor_colnames, spearman_cor_with_overall) %>% arrange(desc(`.`))
+
+pearson_cor_with_overall <- pearson_cor_with_overall[,2] %>% data.frame()
+pearson_cor_with_overall <- cbind(cor_colnames, pearson_cor_with_overall) %>% arrange(desc(`.`))
+
+head(spearman_cor_with_overall[-1,],n = 10)
+head(pearson_cor_with_overall[-1,], n= 10)
+
+xx<- spearman_cor_with_overall %>% 
+  left_join(pearson_cor_with_overall, by = "cor_colnames") %>% 
+    #rename(Feature = "cor_colnames", Spearman = "..x", Pearson = "..y") %>% 
+      #filter(Feature != "Overall") %>% 
+        head(11)
+colnames(xx)<- c("Features", "Spearman", "Pearson")
+xx<- xx[-1,]
+
+
+
+
+
+# Feature Engineering 2
 
 fifa_data <- fifa_data  %>%
   mutate(AttackingRating = (Finishing + LongShots + Penalties + ShotPower + Positioning) /5)
@@ -73,6 +102,8 @@ data_cluster <- fifa_data %>%
   select_if(is.numeric) %>%
   select(-X1, -ID, -`Jersey Number`, -AttackingRating, -starts_with("Value"), - starts_with("Wage"), -starts_with("GK"), -Overall)
 data_cluster
+
+# Scale the data
 
 scaled_data <- scale(data_cluster)
 
