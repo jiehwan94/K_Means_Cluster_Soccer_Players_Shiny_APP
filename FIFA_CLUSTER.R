@@ -5,6 +5,7 @@ library(ggthemes)
 library(kableExtra)
 library(plotly)
 library(ggplot2)
+library(vioplot)
 
 options(stringsAsFactors = FALSE)
 fifa_data<- read_csv('C:\\Users\\user\\Desktop\\Project\\FIFA19\\data.csv',
@@ -43,6 +44,28 @@ fwds <- c(f1, f2, f3, f4)
 fifa_data <- fifa_data %>% 
   mutate(PositionGroup = ifelse(Position %in% gk, "GK", ifelse(Position %in% defs, "DEF", ifelse(Position %in% mids, "MID", ifelse(Position %in% fwds, "FWD", "Unknown")))))
 
+# BOX PLOT
+a <- fifa_data %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= PositionGroup, y= ValueNumeric_pounds, fill= PositionGroup)) +
+  geom_violin() +
+  geom_boxplot(width= 0.2) +
+  scale_y_log10(labels = dollar_format(prefix = "€")) +
+  ggtitle("Position vs Player_Value") +
+  theme_fivethirtyeight()
+
+
+b <- fifa_data %>%
+  filter(PositionGroup != "Unknown") %>%
+  ggplot(aes(x= Position, y= ValueNumeric_pounds)) +
+  geom_boxplot(fill = "orange") +
+  scale_y_log10(labels = dollar_format(prefix = "€")) +
+  coord_flip() +
+  theme_fivethirtyeight() +
+  facet_wrap(~ PositionGroup, scales = "free") +
+  theme(strip.background = element_rect(fill = "black"), strip.text = element_text(colour = "orange", face = "bold"))
+
+gridExtra::grid.arrange(a, b)
 
 
 # Correlations with Overall rating
@@ -119,13 +142,15 @@ for (j in 1:30) {
   # Save total within sum of squares to wss variable
   wss[j] <- km.out$tot.withinss
 }
+
 wss_df <- data.frame(num_cluster = 1:30, wgss = wss)
 wss_df
 
 ggplot(data = wss_df, aes(x=num_cluster, y= wgss)) + 
   geom_line(color = "lightgrey", size = 2) + 
   geom_point(color = "orange", size = 4) +
-  theme_fivethirtyeight() +
+  geom_curve(x=14, xend=8, y=300000, yend= 290500, arrow = arrow(length = unit(0.2,"cm")), size =1, colour = "red") +
+  geom_text(label = "k = 8", x=14, y= 290000, colour = "red") +
   labs(title = "At which point does it bend?")
 
 
