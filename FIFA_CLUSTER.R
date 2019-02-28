@@ -51,9 +51,9 @@ a <- fifa_data %>%
   geom_violin() +
   geom_boxplot(width= 0.2) +
   scale_y_log10(labels = dollar_format(prefix = "€")) +
-  ggtitle("Position vs Player_Value") +
+  ggtitle("Position vs Player_Value",subtitle = "Forwards and Mid-fields are generally valued higher") +
   theme_fivethirtyeight()
-
+a
 
 b <- fifa_data %>%
   filter(PositionGroup != "Unknown") %>%
@@ -61,9 +61,12 @@ b <- fifa_data %>%
   geom_boxplot(fill = "orange") +
   scale_y_log10(labels = dollar_format(prefix = "€")) +
   coord_flip() +
+  ggtitle("Position vs Player_Value",subtitle = "RF, LF, RAM are valued the most") +
   theme_fivethirtyeight() +
   facet_wrap(~ PositionGroup, scales = "free") +
   theme(strip.background = element_rect(fill = "black"), strip.text = element_text(colour = "orange", face = "bold"))
+
+b
 
 gridExtra::grid.arrange(a, b)
 
@@ -192,6 +195,15 @@ aa<-  pp%>%
 ggplotly(aa, height = 600, width = 800)
 
 
+# This enables populating images of players and their club logos
+# Also, clicking the player image will direct you to the player's profile on sofifa.com
+cluster_analysis$Photo<- paste(paste("<a href='https://sofifa.com/player/",
+                                     cluster_analysis$ID,
+                                     "'><img src=",cluster_analysis$Photo,"></img></a>",sep=''))
+cluster_analysis$Club<- paste(paste("<img src=",cluster_analysis$`Club Logo`,"></img>  ",sep=''),
+                              cluster_analysis$Club)
+
+
 # create a function for k-means
 # I will be using this for shiny app
 return_similar_players <- function(player, num_results, return_within_fraction) {
@@ -205,14 +217,6 @@ return_similar_players <- function(player, num_results, return_within_fraction) 
     head(num_results)
   
 }
-
-# This enables populating images of players and their club logos
-# Also, clicking the player image will direct you to the player's profile on sofifa.com
-cluster_analysis$Photo<- paste(paste("<a href='https://sofifa.com/player/",
-                                     cluster_analysis$ID,
-                                     "'><img src=",cluster_analysis$Photo,"></img></a>",sep=''))
-cluster_analysis$Club<- paste(paste("<img src=",cluster_analysis$`Club Logo`,"></img>  ",sep=''),
-                              cluster_analysis$Club)
 
 # Test data
 head(return_similar_players("H. Son", 15, .05))
